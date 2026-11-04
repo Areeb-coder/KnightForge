@@ -151,7 +151,7 @@ The SAN test exercises notation handling. These tests validate selected correctn
 
 ## Current scope and roadmap
 
-This repository contains the classical engine foundation. It does **not** currently include neural-network evaluation, PyTorch training, reinforcement learning, self-play training, an opening book, endgame tablebases, or a web interface.
+This repository contains the classical engine foundation and a WebAssembly browser player. It does **not** currently include neural-network evaluation, PyTorch training, reinforcement learning, self-play training, an opening book, or endgame tablebases.
 
 Potential next steps:
 
