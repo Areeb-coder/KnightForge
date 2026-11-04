@@ -1,4 +1,4 @@
-# MyChessEngine
+# KnightForge
 
 A C++ chess-engine project preserved across four development milestones. The repository uses branches to keep each supplied snapshot independently accessible.
 
@@ -16,8 +16,8 @@ Switch branches from GitHub's branch selector to inspect each version. Each bran
 ## Clone
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/MyChessEngine.git
-cd MyChessEngine
+git clone https://github.com/YOUR_USERNAME/KnightForge.git
+cd KnightForge
 git branch -a
 ```
 
