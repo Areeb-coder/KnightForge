@@ -163,13 +163,13 @@ function refreshGame() {
 function getLegalMoves(position) {
   const result = engine.ccall('knightforge_legal_moves', 'string', ['string'], [position]);
   if (result.startsWith('ERROR')) throw new Error(result);
-  return result.trim() ? result.trim().split(/\\s+/) : [];
+  return result.trim() ? result.trim().split(/\s+/) : [];
 }
 
 function applyMove(position, move) {
   const result = engine.ccall('knightforge_apply_move', 'string', ['string', 'string'], [position, move]);
   if (result.startsWith('ERROR')) throw new Error(result);
-  const parts = result.split('\\n');
+  const parts = result.split('\n');
   return { san: parts[0], fen: parts[1] };
 }
 
