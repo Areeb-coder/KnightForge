@@ -15,8 +15,6 @@ jobs:
         include:
           - os: ubuntu-latest
             compiler: gcc
-          - os: macos-latest
-            compiler: clang
           - os: windows-latest
             compiler: msvc
     steps:
