@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1118">
+  <meta name="description" content="Play chess against KnightForge, an original C++17 chess engine compiled to WebAssembly.">
+  <title>KnightForge — Play the Engine</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="KnightForge home">
+      <span class="brand-mark">♞</span>
+      <span>KNIGHT<span class="brand-accent">FORGE</span></span>
+    </a>
+    <nav>
+      <a href="https://github.com/Areeb-coder/KnightForge" target="_blank" rel="noreferrer">Source code ↗</a>
+      <a href="https://github.com/Areeb-coder" target="_blank" rel="noreferrer">Developer ↗</a>
+    </nav>
+  </header>
+
+  <main class="layout">
+    <section class="intro">
+      <p class="eyebrow">C++17 ENGINE · WEBASSEMBLY BUILD</p>
+      <h1>Make your move.<br><span>Challenge the engine.</span></h1>
+      <p class="lede">Play White against KnightForge. The same C++ move-generation and search code in the repository powers the opponent directly in your browser.</p>
+      <div class="engine-tags"><span>LEGAL MOVE GENERATION</span><span>SAN</span><span>ALPHA-BETA SEARCH</span></div>
+    </section>
+
+    <section class="game-shell" aria-label="Chess game">
+      <div class="board-column">
+        <div class="player-row opponent">
+          <div class="avatar">♚</div>
+          <div class="player-name"><strong>KnightForge</strong><small id="engine-state">Engine loading…</small></div>
+          <span class="side-label">BLACK</span>
+        </div>
+        <div class="board-frame">
+          <div id="board" class="board" role="group" aria-label="Chessboard. You play White."></div>
+        </div>
+        <div class="player-row you">
+          <div class="avatar">♔</div>
+          <div class="player-name"><strong>You</strong><small>White · Your turn</small></div>
+          <span class="side-label">WHITE</span>
+        </div>
+      </div>
+
+      <aside class="game-panel">
+        <div class="panel-heading">
+          <div><p class="eyebrow">MATCH CONTROL</p><h2>Game console</h2></div>
+          <span id="status-dot" class="status-dot"></span>
+        </div>
+        <div id="status" class="status" role="status" aria-live="polite">Preparing the KnightForge engine…</div>
+
+        <div class="control-group">
+          <label for="depth">Search depth <strong id="depth-value">5</strong></label>
+          <input id="depth" type="range" min="2" max="9" value="5">
+          <div class="range-labels"><span>Faster</span><span>Stronger / slower</span></div>
+        </div>
+
+        <div class="control-group">
+          <label for="think-time">Think time</label>
+          <select id="think-time">
+            <option value="250">Quick · 250 ms</option>
+            <option value="600" selected>Normal · 600 ms</option>
+            <option value="1200">Deep · 1.2 sec</option>
+            <option value="2500">Extended · 2.5 sec</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button id="new-game" class="primary">New game</button>
+          <button id="undo" class="secondary" disabled>Undo turn</button>
+        </div>
+
+        <div class="move-section">
+          <div class="section-title"><h3>Move history</h3><span id="move-count">0 plies</span></div>
+          <div id="moves" class="moves" aria-label="Move history"><p class="empty">Your game will appear here.</p></div>
+        </div>
+
+        <div class="fen-section">
+          <div class="section-title"><h3>Position</h3><button id="copy-fen" class="text-button">Copy FEN</button></div>
+          <code id="fen">Starting position</code>
+        </div>
+        <p class="disclaimer">Experimental engine build. Search strength is not an official rating. Analysis is performed locally in this browser tab.</p>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <span>Built by <a href="https://github.com/Areeb-coder">Areeb Khalid</a></span>
+      <span>Open-source project · <a href="https://github.com/Areeb-coder/KnightForge">KnightForge on GitHub</a></span>
+    </footer>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
