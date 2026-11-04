@@ -123,6 +123,12 @@ function updateSideLabels() {
   document.querySelector('#player-name').textContent = 'You';
   document.querySelector('.player-row.you .avatar').textContent = playerColor === 'w' ? '♔' : '♚';
   document.querySelector('.player-row.opponent .avatar').textContent = playerColor === 'w' ? '♚' : '♔';
+  const promotionGlyphs = playerColor === 'w'
+    ? { q: '♕', r: '♖', b: '♗', n: '♘' }
+    : { q: '♛', r: '♜', b: '♝', n: '♞' };
+  document.querySelectorAll('[data-promotion]').forEach(button => {
+    button.textContent = promotionGlyphs[button.dataset.promotion];
+  });
   boardEl.setAttribute('aria-label', 'Chessboard. You play ' + (playerColor === 'w' ? 'White.' : 'Black.'));
 }
 
@@ -206,7 +212,9 @@ function finishIfNeeded() {
 function requestPromotion(candidates) {
   if (candidates.length <= 1) return Promise.resolve(candidates[0] || null);
   promotionModal.classList.remove('hidden');
-  return new Promise(resolve => { promotionResolver = resolve; });
+  return new Promise(resolve => {
+    promotionResolver = choice => resolve(candidates.find(move => move[4] === choice) || null);
+  });
 }
 
 function closePromotion(choice) {
