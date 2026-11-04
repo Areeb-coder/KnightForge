@@ -1,5 +1,3 @@
-import createKnightForge from './engine/knightforge.js';
-
 const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const SYMBOLS = {
   K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙',
@@ -297,6 +295,7 @@ async function boot() {
   try {
     engineStateEl.textContent = 'Loading WebAssembly…';
     setStatus('Downloading the KnightForge WebAssembly engine…', false);
+    const { default: createKnightForge } = await import('./engine/knightforge.js');
     engine = await createKnightForge();
     busy = false;
     engineStateEl.textContent = 'Ready to play';
