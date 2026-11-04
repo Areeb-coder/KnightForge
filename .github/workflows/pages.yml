@@ -1,0 +1,62 @@
+name: Build and deploy KnightForge web player
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v16
+        with:
+          version: 5.0.1
+
+      - name: Build KnightForge WebAssembly engine
+        run: |
+          mkdir -p web/engine
+          em++ src/Chess.cpp src/Phase1/Piece.cpp src/Phase2/Move.cpp src/wasm_api.cpp \
+            -O3 -std=c++17 --no-entry \
+            -s WASM=1 \
+            -s MODULARIZE=1 \
+            -s EXPORT_ES6=1 \
+            -s EXPORT_NAME=createKnightForge \
+            -s ENVIRONMENT=web \
+            -s ALLOW_MEMORY_GROWTH=1 \
+            -s NO_EXIT_RUNTIME=1 \
+            -s EXPORTED_FUNCTIONS='["_knightforge_legal_moves","_knightforge_apply_move","_knightforge_best_move","_knightforge_status"]' \
+            -s EXPORTED_RUNTIME_METHODS='["ccall"]' \
+            -o web/engine/knightforge.js
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
