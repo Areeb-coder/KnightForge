@@ -1,78 +1,80 @@
-# MyChessEngine — Phase 3
+# MyChessEngine — Final Terminal Version
 
-Phase 3 adds the complete chess-rules layer on top of your Phase 1 and Phase 2 board/move work.
+This version starts from the user's Phase 1 + Phase 2 project and completes the core terminal chess engine milestones.
 
-## What Phase 3 contains
+## Included
 
+### Phase 1–2
+- Piece and color representation
+- 8×8 board
+- Coordinate moves such as `e2e4`
+
+### Phase 3 — Complete chess rules
+- Legal move generation
 - Check detection
-- Legal move filtering (moves that expose your own king are rejected)
-- Checkmate
-- Stalemate
-- Castling on both sides
+- Checkmate and stalemate
+- Castling
 - En passant
-- Pawn promotion to queen/rook/bishop/knight
-- FEN load/save
-- 50-move counter tracking
+- Promotion
+- FEN import/export
+- 50-move counter
 - Threefold repetition tracking
-- Insufficient-material detection
-- Make/undo move support
-- Terminal two-player chess program
-- Rule regression tests
 
-## What Phase 3 does NOT contain
+### Phase 4+ — Basic chess engine
+- Material + simple positional evaluation
+- Minimax/negamax alpha-beta search
+- Move ordering
+- Quiescence search
+- Iterative deepening
+- Time limit
+- Transposition table
+- Terminal engine opponent
+- Perft testing
 
-There is deliberately no computer opponent yet.
-That belongs to Phase 4, where we add evaluation + minimax/alpha-beta search.
+## Build with g++
 
-## Build — Windows / MSYS2
+From this project folder:
 
 ```bash
-cmake -S . -B build -G "MinGW Makefiles"
-cmake --build build
+g++ -std=c++17 src/main.cpp src/Chess.cpp src/Phase1/Piece.cpp src/Phase2/Move.cpp -O2 -o chess_engine.exe
 ```
 
 Run:
 
 ```bash
-./build/chess_phase3.exe
+./chess_engine.exe
 ```
 
-## Build — Linux / macOS
+On Windows CMD/PowerShell:
+
+```text
+chess_engine.exe
+```
+
+## Build with CMake
 
 ```bash
 cmake -S . -B build
-cmake --build build
-./build/chess_phase3
-```
-
-## Run tests
-
-```bash
+cmake --build build --config Release
 ctest --test-dir build --output-on-failure
 ```
 
-## Terminal commands
+## Commands
 
 ```text
-e2e4
-moves
-fen
-setfen <FEN>
-undo
-new
-help
-quit
+e2e4       Make a move
+moves      List all legal moves
+fen        Show current FEN
+setfen ... Load a FEN position
+undo       Undo the last half-move
+depth 4    Search depth cap
+time 1000  Search time in milliseconds
+perft 4    Count legal move tree nodes
+new        New game
+help       Show commands
+quit       Exit
 ```
 
-Promotion example:
+## Important note
 
-```text
-e7e8q
-e7e8r
-e7e8b
-e7e8n
-```
-
-## Important milestone
-
-When the Phase 3 tests pass, your program has a rules engine that can distinguish pseudo-legal moves from legal moves and correctly handle the major special chess rules.
+This is intentionally a small educational engine, not a Stockfish-strength engine. The next major upgrade should be stronger evaluation and faster board representation (bitboards), followed later by ML.

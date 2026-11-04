@@ -1,160 +1,46 @@
 #include "Chess.h"
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <unordered_map>
 
-using namespace chess;
+using namespace std;
 
-namespace {
+static char pieceToChar(Piece pc){char ch='.';switch(pc.type){case PieceType::PAWN:ch='P';break;case PieceType::KNIGHT:ch='N';break;case PieceType::BISHOP:ch='B';break;case PieceType::ROOK:ch='R';break;case PieceType::QUEEN:ch='Q';break;case PieceType::KING:ch='K';break;default:break;}if(pc.color==Color::BLACK)ch=(char)tolower((unsigned char)ch);return ch;}
+static void printBoard(const Position&p){cout<<"\n    a b c d e f g h\n   -----------------\n";for(int r=0;r<8;r++){cout<<8-r<<" | ";for(int c=0;c<8;c++)cout<<pieceToChar(p.board[r][c])<<' ';cout<<"| "<<8-r<<'\n';}cout<<"   -----------------\n    a b c d e f g h\n\n";}
+static bool parseInputMove(const string&s,Move&out){if(s.size()!=4&&s.size()!=5)return false;string x=s;for(char&ch:x)ch=(char)tolower((unsigned char)ch);if(x[0]<'a'||x[0]>'h'||x[2]<'a'||x[2]>'h'||x[1]<'1'||x[1]>'8'||x[3]<'1'||x[3]>'8')return false;out.fromRow='8'-x[1];out.fromCol=x[0]-'a';out.toRow='8'-x[3];out.toCol=x[2]-'a';out.promotion=PieceType::NONE;if(x.size()==5){switch(x[4]){case'q':out.promotion=PieceType::QUEEN;break;case'r':out.promotion=PieceType::ROOK;break;case'b':out.promotion=PieceType::BISHOP;break;case'n':out.promotion=PieceType::KNIGHT;break;default:return false;}}return true;}
+static bool sameMove(const Move&a,const Move&b){return a.fromRow==b.fromRow&&a.fromCol==b.fromCol&&a.toRow==b.toRow&&a.toCol==b.toCol&&a.promotion==b.promotion;}
 
-void printHelp() {
-    std::cout
-        << "Commands:\n"
-        << "  e2e4          Make a move\n"
-        << "  e7e8q         Promote pawn to queen (q/r/b/n)\n"
-        << "  moves         Show all legal moves\n"
-        << "  fen            Show current FEN\n"
-        << "  setfen <FEN>  Load a FEN position\n"
-        << "  undo           Undo the previous move\n"
-        << "  new            Reset to starting position\n"
-        << "  help           Show commands\n"
-        << "  quit           Exit\n\n"
-        << "Phase 3 is rules-only: White and Black play from the terminal.\n";
-}
+static void printHelp(){cout<<"Commands:\n  e2e4       make a move\n  moves      list legal moves\n  fen        show current FEN\n  setfen FEN load a position\n  depth N    set engine max depth (default 4)\n  time N     set engine time in milliseconds (default 1000)\n  perft N    run move-generation test\n  undo       undo your last move\n  new        new game\n  help       show commands\n  quit       exit\n";}
 
-void printStatus(Board& board) {
-    Color side = board.sideToMove();
-    auto legal = board.generateLegalMoves(side);
+struct HistoryEntry{Move move;StateInfo state;};
 
-    std::cout << (side == Color::White ? "White" : "Black") << " to move";
-    if (board.isInCheck(side)) std::cout << " — CHECK";
-    std::cout << "\n";
-
-    if (legal.empty()) {
-        if (board.isInCheck(side)) {
-            std::cout << "CHECKMATE! " << (side == Color::White ? "Black" : "White") << " wins.\n";
-        } else {
-            std::cout << "STALEMATE! Draw.\n";
-        }
-        return;
+int main(){
+    Position p=startPosition();vector<HistoryEntry> history;unordered_map<uint64_t,int> repetitions;repetitions[positionKey(p)]=1;int depth=4,timeMs=1000;
+    cout<<"========================================\n       MY CHESS ENGINE - TERMINAL\n========================================\n";cout<<"Basic rules + search engine\nType 'help' for commands.\n";
+    while(true){
+        printBoard(p);auto legal=generateLegalMoves(p);bool check=isInCheck(p,p.sideToMove);if(legal.empty()){if(check)cout<<"Checkmate! "<<colorName(p.sideToMove==Color::WHITE?Color::BLACK:Color::WHITE)<<" wins.\n";else cout<<"Stalemate! Draw.\n";break;}if(check)cout<<"CHECK!\n";
+        if(p.halfmoveClock>=100){cout<<"50-move rule draw.\n";break;}if(repetitions[positionKey(p)]>=3){cout<<"Threefold repetition detected. Draw.\n";break;}
+        cout<<colorName(p.sideToMove)<<" to move > ";string input;if(!getline(cin,input))break;stringstream ss(input);string cmd;ss>>cmd;if(cmd.empty())continue;string low=cmd;for(char&c:low)c=(char)tolower((unsigned char)c);
+        if(low=="quit"||low=="exit")break;
+        if(low=="help"){printHelp();continue;}
+        if(low=="new"){p=startPosition();history.clear();repetitions.clear();repetitions[positionKey(p)]=1;continue;}
+        if(low=="undo"){if(history.empty()){cout<<"Nothing to undo.\n";continue;}auto h=history.back();history.pop_back();auto k=positionKey(p);if(auto it=repetitions.find(k);it!=repetitions.end()){if(--it->second==0)repetitions.erase(it);}undoMove(p,h.move,h.state);continue;}
+        if(low=="fen"){cout<<positionToFEN(p)<<"\n";continue;}
+        if(low=="moves"){for(const auto&m:legal)cout<<moveToString(m)<<' ';cout<<"\n";continue;}
+        if(low=="depth"){int n;if(ss>>n&&n>=1&&n<=10){depth=n;cout<<"Depth set to "<<depth<<".\n";}else cout<<"Use depth 1..10.\n";continue;}
+        if(low=="time"){int n;if(ss>>n&&n>=50&&n<=60000){timeMs=n;cout<<"Time set to "<<timeMs<<" ms.\n";}else cout<<"Use time 50..60000 ms.\n";continue;}
+        if(low=="perft"){int d;if(ss>>d&&d>=1&&d<=6){Position t=p;cout<<"Perft("<<d<<") = "<<perft(t,d)<<"\n";}else cout<<"Use perft 1..6.\n";continue;}
+        if(low=="setfen"){string fen,part;getline(ss,part);if(part.size()&&part[0]==' ')part.erase(0,1);Position q;if(positionFromFEN(part,q)){p=q;history.clear();repetitions.clear();repetitions[positionKey(p)]=1;cout<<"Position loaded.\n";}else cout<<"Invalid FEN.\n";continue;}
+        Move user; if(!parseInputMove(cmd,user)){cout<<"Invalid command or move. Example: e2e4\n";continue;}auto it=find_if(legal.begin(),legal.end(),[&](const Move&m){return sameMove(m,user);});if(it==legal.end()){cout<<"Illegal move: "<<cmd<<"\n";continue;}
+        StateInfo st{};makeMove(p,*it,st);history.push_back({*it,st});repetitions[positionKey(p)]++;
+        // Engine responds as Black only. If user has switched to black with setfen, it still responds after the user move logic.
+        legal=generateLegalMoves(p);if(legal.empty())continue;
+        cout<<"Engine thinking... depth="<<depth<<" time="<<timeMs<<"ms\n";SearchResult result=searchBestMove(p,depth,timeMs);if(result.depth==0){result.move=legal.front();}
+        cout<<"Engine plays: "<<moveToString(result.move)<<"  score="<<result.score<<" depth="<<result.depth<<" nodes="<<result.nodes<<"\n";StateInfo est{};makeMove(p,result.move,est);history.push_back({result.move,est});repetitions[positionKey(p)]++;
     }
-
-    if (board.isThreefoldRepetition()) {
-        std::cout << "Draw available/claimed by threefold repetition.\n";
-    }
-    if (board.isFiftyMoveDraw()) {
-        std::cout << "50-move draw condition reached.\n";
-    }
-    if (board.isInsufficientMaterial()) {
-        std::cout << "Draw by insufficient material.\n";
-    }
-}
-
-bool isTerminal(Board& board) {
-    Color side = board.sideToMove();
-    auto legal = board.generateLegalMoves(side);
-    if (legal.empty()) {
-        printStatus(board);
-        return true;
-    }
-    if (board.isFiftyMoveDraw() || board.isThreefoldRepetition() || board.isInsufficientMaterial()) {
-        printStatus(board);
-        return true;
-    }
-    return false;
-}
-
-} // namespace
-
-int main() {
-    Board board;
-    std::vector<Board> history;
-    history.push_back(board);
-
-    std::cout << "========================================\n"
-              << "          CHESS ENGINE — PHASE 3       \n"
-              << "========================================\n"
-              << "Complete chess rules, terminal only.\n"
-              << "White and Black play manually.\n"
-              << "Type 'help' for commands.\n";
-
-    while (true) {
-        board.print();
-        printStatus(board);
-
-        if (isTerminal(board)) break;
-
-        std::cout << "> ";
-        std::string input;
-        if (!std::getline(std::cin, input)) break;
-        if (input.empty()) continue;
-
-        std::istringstream iss(input);
-        std::string cmd;
-        iss >> cmd;
-        std::string lower = cmd;
-        std::transform(lower.begin(), lower.end(), lower.begin(),
-                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
-        if (lower == "quit" || lower == "exit") break;
-        if (lower == "help") { printHelp(); continue; }
-
-        if (lower == "new") {
-            board.reset();
-            history.clear();
-            history.push_back(board);
-            continue;
-        }
-
-        if (lower == "fen") {
-            std::cout << board.toFEN() << "\n";
-            continue;
-        }
-
-        if (lower == "setfen") {
-            std::string fen;
-            std::getline(iss >> std::ws, fen);
-            std::string error;
-            if (board.fromFEN(fen, &error)) {
-                history.clear();
-                history.push_back(board);
-                std::cout << "FEN loaded.\n";
-            } else {
-                std::cout << "FEN error: " << error << "\n";
-            }
-            continue;
-        }
-
-        if (lower == "moves") {
-            auto legal = board.generateLegalMoves(board.sideToMove());
-            for (const auto& move : legal) std::cout << moveToUci(move) << ' ';
-            std::cout << "\nTotal: " << legal.size() << "\n";
-            continue;
-        }
-
-        if (lower == "undo") {
-            if (history.size() > 1) {
-                history.pop_back();
-                board = history.back();
-                std::cout << "Move undone.\n";
-            } else {
-                std::cout << "Nothing to undo.\n";
-            }
-            continue;
-        }
-
-        Move move;
-        if (!board.parseUserMove(input, move)) {
-            std::cout << "Illegal move. Use coordinate notation such as e2e4 or e7e8q.\n";
-            continue;
-        }
-
-        UndoState undo;
-        if (!board.makeMove(move, undo)) {
-            std::cout << "Could not make move.\n";
-            continue;
-        }
-        board.pushRepetition();
-        history.push_back(board);
-    }
-
-    std::cout << "Goodbye.\n";
-    return 0;
+    cout<<"Game ended.\n";return 0;
 }

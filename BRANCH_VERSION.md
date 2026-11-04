@@ -1,5 +1,5 @@
-# Phase 3 — Chess Rules Foundation
+# Final — Classical Search Engine
 
-Foundational board and move-generation implementation. This is the earliest supplied milestone. Review the source and tests on this branch for its exact supported rules.
+The supplied Final snapshot, adding the engine/search implementation beyond the Phase 3 rules foundation. Consult its source and README for the precise feature set.
 
-Branch: `rules/complete-chess-logic`
+Branch: `engine/basic-search`
