@@ -122,3 +122,43 @@ button:disabled { opacity: .42; cursor: not-allowed; }
   .footer { flex-direction: column; }
   .square.legal.capture::after { border-width: 3px; }
 }
+
+
+/* Side-selection and promotion dialogs */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center;
+  padding: 20px; background: rgba(3, 8, 13, .78); backdrop-filter: blur(9px);
+}
+.modal-backdrop.hidden { display: none; }
+.modal-card {
+  width: min(100%, 460px); padding: 30px; border: 1px solid #3a5d51;
+  border-radius: 13px; background: linear-gradient(145deg, #172a32, #0c151e);
+  box-shadow: 0 30px 100px rgba(0,0,0,.55);
+}
+.modal-card h2 { font-size: 27px; margin: 0; }
+.modal-copy { color: #9dafbc; font-size: 13px; line-height: 1.6; margin: 12px 0 22px; }
+.side-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.side-choice {
+  display: flex; flex-direction: column; align-items: center; gap: 7px; padding: 17px 10px;
+  border: 1px solid #385365; border-radius: 8px; background: #142431; color: var(--text);
+  cursor: pointer; transition: border-color .15s, background .15s, transform .15s;
+}
+.side-choice:hover:not(:disabled) { transform: translateY(-2px); border-color: var(--accent); background: #1b3540; }
+.side-choice:disabled { opacity: .4; cursor: wait; }
+.choice-piece { font: 48px/1 'DejaVu Sans', serif; }
+.white-piece { color: #fff; text-shadow: 0 2px 4px #718b7d; }
+.black-piece { color: #18231f; text-shadow: 0 1px 0 #c8d6ce; }
+.side-choice strong { font-size: 13px; }
+.side-choice small { color: #8da1ae; font-size: 10px; }
+.modal-foot { margin-top: 17px; text-align: center; color: #7f96a3; font: 10px 'DM Mono', monospace; }
+.promotion-card { width: min(100%, 360px); }
+.promotion-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.promotion-choices button {
+  padding: 13px 4px; border: 1px solid #3b5663; border-radius: 7px;
+  background: #142431; color: #e7f2ed; font: 37px/1 'DejaVu Sans', serif; cursor: pointer;
+}
+.promotion-choices button:hover { border-color: var(--accent); background: #1b3540; }
+@media (max-width: 520px) {
+  .modal-card { padding: 23px 18px; }
+  .modal-card h2 { font-size: 23px; }
+}
