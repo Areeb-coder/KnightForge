@@ -30,3 +30,7 @@ Thumbs.db
 # Logs and temporary files
 *.log
 *.tmp
+
+# Generated WebAssembly build artifacts (created by the Pages workflow)
+/web/engine/knightforge.js
+/web/engine/knightforge.wasm
