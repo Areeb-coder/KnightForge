@@ -32,7 +32,7 @@ git switch main
 
 ## Build the SAN default branch
 
-See the branch-specific `README.md` for build instructions. On Windows, use `build_windows.bat` if provided. On Linux/macOS, use `./build_linux.sh` if provided, or build with CMake.
+The detailed SAN engine guide is available in [`docs/SAN_ENGINE_README.md`](docs/SAN_ENGINE_README.md). See the branch-specific `README.md` for build instructions. On Windows, use `build_windows.bat` if provided. On Linux/macOS, use `./build_linux.sh` if provided, or build with CMake.
 
 ## Notes
 
