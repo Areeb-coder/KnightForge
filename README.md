@@ -1,80 +1,134 @@
-# MyChessEngine — Final Terminal Version
+# MyChessEngine — Pre-ML Final Build
 
-This version starts from the user's Phase 1 + Phase 2 project and completes the core terminal chess engine milestones.
+This version intentionally stops **before machine learning / neural-network training**. It contains the complete terminal chess engine foundation and a classical search engine.
 
-## Included
+## What is included
 
-### Phase 1–2
-- Piece and color representation
-- 8×8 board
-- Coordinate moves such as `e2e4`
+### Phases 1–3: Chess foundation
+- 8×8 board and pieces
+- coordinate moves (`e2e4`)
+- legal move generation
+- check/checkmate/stalemate
+- castling
+- en passant
+- promotion (`e7e8q`)
+- FEN load/save
+- make/undo
+- 50-move and threefold-repetition tracking
+- insufficient-material draw detection
 
-### Phase 3 — Complete chess rules
-- Legal move generation
-- Check detection
-- Checkmate and stalemate
-- Castling
-- En passant
-- Promotion
-- FEN import/export
-- 50-move counter
-- Threefold repetition tracking
+### Phase 4: Classical search
+- material + positional evaluation
+- negamax/minimax-style search
+- alpha-beta pruning
+- move ordering
+- quiescence search
+- iterative deepening
+- time control
 
-### Phase 4+ — Basic chess engine
-- Material + simple positional evaluation
-- Minimax/negamax alpha-beta search
-- Move ordering
-- Quiescence search
-- Iterative deepening
-- Time limit
-- Transposition table
-- Terminal engine opponent
-- Perft testing
+### Phase 5: Strength improvements
+- piece-square tables
+- pawn-structure evaluation
+- passed-pawn bonuses
+- bishop-pair bonus
+- rook file bonuses
+- king-safety heuristics
+- killer-move heuristic
+- history heuristic
+- transposition table
 
-## Build with g++
+### Phase 6: Engine interface
+- UCI mode (`--uci`)
+- `uci`, `isready`, `position`, `go`, `ucinewgame`, `quit`
+- can be connected to a UCI-compatible chess GUI later, without changing the engine core
 
-From this project folder:
+### Phase 7: Diagnostics and testing
+- Perft tests
+- root `divide` command
+- evaluation display
+- search benchmark
+
+## Build
+
+### Windows (MSYS2/UCRT64)
 
 ```bash
-g++ -std=c++17 src/main.cpp src/Chess.cpp src/Phase1/Piece.cpp src/Phase2/Move.cpp -O2 -o chess_engine.exe
+cmake -S . -B build -G Ninja
+cmake --build build
+./build/chess_engine.exe
 ```
 
-Run:
+Or use the included `build_windows.bat` from a suitable MinGW environment.
+
+### Linux/macOS
 
 ```bash
-./chess_engine.exe
+cmake -S . -B build -G Ninja
+cmake --build build
+./build/chess_engine
 ```
 
-On Windows CMD/PowerShell:
+## Terminal commands
 
 ```text
-chess_engine.exe
+e2e4                  make a move
+moves                 list legal moves
+fen                   print current FEN
+setfen <FEN>          load a position
+undo                  undo the last move
+new                   new starting position
+depth N               set search depth
+time N                set thinking time in milliseconds
+perft N               run perft
+divide N               show per-root perft counts
+eval                  show static evaluation
+bench                 benchmark the current search settings
+uci                   enter UCI mode
+help                  show commands
+quit                  exit
 ```
 
-## Build with CMake
+## UCI mode
+
+Start directly with:
 
 ```bash
-cmake -S . -B build
-cmake --build build --config Release
-ctest --test-dir build --output-on-failure
+./build/chess_engine --uci
 ```
 
-## Commands
+Or type `uci` inside the terminal program.
+
+Example:
 
 ```text
-e2e4       Make a move
-moves      List all legal moves
-fen        Show current FEN
-setfen ... Load a FEN position
-undo       Undo the last half-move
-depth 4    Search depth cap
-time 1000  Search time in milliseconds
-perft 4    Count legal move tree nodes
-new        New game
-help       Show commands
-quit       Exit
+uci
+isready
+position startpos moves e2e4 e7e5 g1f3
+go depth 5
 ```
 
-## Important note
+The engine replies with a `bestmove`.
 
-This is intentionally a small educational engine, not a Stockfish-strength engine. The next major upgrade should be stronger evaluation and faster board representation (bitboards), followed later by ML.
+## Verification
+
+The included Perft test checks the standard starting-position counts:
+
+- depth 1 = 20
+- depth 2 = 400
+- depth 3 = 8,902
+- depth 4 = 197,281
+
+## Deliberately not included yet
+
+This build does **not** include:
+
+- neural networks
+- PyTorch
+- reinforcement learning
+- self-play training
+- AlphaZero-style learning
+- opening books
+- endgame tablebases
+- web frontend
+
+Those are the next, separate stage after this pre-ML engine foundation.

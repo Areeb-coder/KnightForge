@@ -23,6 +23,72 @@ std::uint64_t nodes = 0;
 Clock::time_point deadline;
 bool stopSearch = false;
 
+constexpr int MAX_PLY = 64;
+Move killerMoves[MAX_PLY][2]{};
+int historyHeuristic[2][64][64]{};
+
+// Piece-square tables, from White's perspective. Row 0 is rank 8.
+constexpr int PAWN_PST[8][8] = {
+    {  0,  0,  0,  0,  0,  0,  0,  0},
+    {  8, 10, 10,-10,-10, 10, 10,  8},
+    {  4,  2,  0,  0,  0,  0,  2,  4},
+    {  2,  4,  8, 15, 15,  8,  4,  2},
+    {  1,  3,  6, 12, 12,  6,  3,  1},
+    {  0,  0,  2,  5,  5,  2,  0,  0},
+    {  6,  8,  8,-12,-12,  8,  8,  6},
+    {  0,  0,  0,  0,  0,  0,  0,  0}
+};
+constexpr int KNIGHT_PST[8][8] = {
+    {-50,-35,-25,-20,-20,-25,-35,-50},
+    {-30,-10,  0,  5,  5,  0,-10,-30},
+    {-20,  5, 15, 20, 20, 15,  5,-20},
+    {-15, 10, 20, 25, 25, 20, 10,-15},
+    {-15,  5, 18, 24, 24, 18,  5,-15},
+    {-20,  0, 10, 15, 15, 10,  0,-20},
+    {-30,-10, -5,  0,  0, -5,-10,-30},
+    {-50,-35,-25,-20,-20,-25,-35,-50}
+};
+constexpr int BISHOP_PST[8][8] = {
+    {-20,-10,-10,-10,-10,-10,-10,-20},
+    {-10,  5,  0,  0,  0,  0,  5,-10},
+    {-10, 10, 10, 10, 10, 10, 10,-10},
+    {-10,  0, 10, 15, 15, 10,  0,-10},
+    {-10,  5,  8, 10, 10,  8,  5,-10},
+    {-10,  0,  5, 10, 10,  5,  0,-10},
+    {-10,  0,  0,  0,  0,  0,  0,-10},
+    {-20,-10,-10,-10,-10,-10,-10,-20}
+};
+constexpr int ROOK_PST[8][8] = {
+    {  0,  0,  5, 10, 10,  5,  0,  0},
+    { -5,  0,  0,  0,  0,  0,  0, -5},
+    { -5,  0,  0,  0,  0,  0,  0, -5},
+    { -5,  0,  0,  0,  0,  0,  0, -5},
+    { -5,  0,  0,  0,  0,  0,  0, -5},
+    { -5,  0,  0,  0,  0,  0,  0, -5},
+    {  5, 10, 10, 10, 10, 10, 10,  5},
+    {  0,  0,  0,  5,  5,  0,  0,  0}
+};
+constexpr int QUEEN_PST[8][8] = {
+    {-20,-10,-10, -5, -5,-10,-10,-20},
+    {-10,  0,  0,  0,  0,  0,  0,-10},
+    {-10,  0,  5,  5,  5,  5,  0,-10},
+    { -5,  0,  5, 10, 10,  5,  0, -5},
+    { -5,  0,  5, 10, 10,  5,  0, -5},
+    {-10,  0,  5,  5,  5,  5,  0,-10},
+    {-10,  0,  0,  0,  0,  0,  0,-10},
+    {-20,-10,-10, -5, -5,-10,-10,-20}
+};
+constexpr int KING_MID_PST[8][8] = {
+    {-30,-40,-40,-50,-50,-40,-40,-30},
+    {-30,-40,-40,-50,-50,-40,-40,-30},
+    {-20,-30,-30,-40,-40,-30,-30,-20},
+    {-10,-20,-20,-30,-30,-20,-20,-10},
+    {  0,-10,-10,-20,-20,-10,-10,  0},
+    { 20, 10, 10,  0,  0, 10, 10, 20},
+    { 20, 20,  0,  0,  0,  0, 20, 20},
+    { 20, 30, 10,  0,  0, 10, 30, 20}
+};
+
 char pieceChar(Piece pc) {
     char ch='.';
     switch(pc.type){case PieceType::PAWN:ch='P';break;case PieceType::KNIGHT:ch='N';break;case PieceType::BISHOP:ch='B';break;case PieceType::ROOK:ch='R';break;case PieceType::QUEEN:ch='Q';break;case PieceType::KING:ch='K';break;default:break;}
@@ -72,11 +138,11 @@ void addKnightMoves(const Position&p,std::vector<Move>&out,int r,int c){
 }
 
 void addSliding(const Position&p,std::vector<Move>&out,int r,int c,const int dirs[][2],int n){
-    for(int i=0;i<n;i++){int nr=r+dirs[i][0],nc=c+dirs[i][1];while(isInside(nr,nc)){if(p.board[nr][nc].type==PieceType::NONE)addMove(out,r,c,nr,nc);else{if(p.board[nr][nc].color!=p.board[r][c].color)addMove(out,r,c,nr,nc);break;}nr+=dirs[i][0];nc+=dirs[i][1];}}
+    for(int i=0;i<n;i++){int nr=r+dirs[i][0],nc=c+dirs[i][1];while(isInside(nr,nc)){if(p.board[nr][nc].type==PieceType::NONE)addMove(out,r,c,nr,nc);else{if(p.board[nr][nc].color!=p.board[r][c].color&&p.board[nr][nc].type!=PieceType::KING)addMove(out,r,c,nr,nc);break;}nr+=dirs[i][0];nc+=dirs[i][1];}}
 }
 
 void addKingMoves(const Position&p,std::vector<Move>&out,int r,int c){
-    for(int dr=-1;dr<=1;dr++)for(int dc=-1;dc<=1;dc++){if(dr==0&&dc==0)continue;int nr=r+dr,nc=c+dc;if(isInside(nr,nc)&&p.board[nr][nc].color!=p.board[r][c].color)addMove(out,r,c,nr,nc);}
+    for(int dr=-1;dr<=1;dr++)for(int dc=-1;dc<=1;dc++){if(dr==0&&dc==0)continue;int nr=r+dr,nc=c+dc;if(isInside(nr,nc)&&p.board[nr][nc].color!=p.board[r][c].color&&p.board[nr][nc].type!=PieceType::KING)addMove(out,r,c,nr,nc);}
     Color s=p.board[r][c].color;
     if(s==Color::WHITE&&r==7&&c==4&&!isInCheck(p,Color::WHITE)){
         if(p.whiteKingSideCastle&&p.board[7][5].type==PieceType::NONE&&p.board[7][6].type==PieceType::NONE&&p.board[7][7].type==PieceType::ROOK&&p.board[7][7].color==Color::WHITE&&!isSquareAttacked(p,7,5,Color::BLACK)&&!isSquareAttacked(p,7,6,Color::BLACK)) addMove(out,7,4,7,6);
@@ -90,67 +156,158 @@ void addKingMoves(const Position&p,std::vector<Move>&out,int r,int c){
 
 void clearSquare(Position&p,int r,int c){p.board[r][c]={PieceType::NONE,Color::NONE};}
 
-int moveScore(const Position&p,const Move&m){
+bool isCaptureMove(const Position& p, const Move& m){
+    if(p.board[m.toRow][m.toCol].type!=PieceType::NONE) return true;
+    Piece attacker=p.board[m.fromRow][m.fromCol];
+    return attacker.type==PieceType::PAWN && m.toRow==p.enPassantRow && m.toCol==p.enPassantCol && m.fromCol!=m.toCol;
+}
+
+bool isKiller(const Move& m, int ply, int slot){ return ply>=0 && ply<MAX_PLY && sameMove(m,killerMoves[ply][slot]); }
+
+int moveScore(const Position&p,const Move&m,int ply){
     Piece victim=p.board[m.toRow][m.toCol]; Piece attacker=p.board[m.fromRow][m.fromCol]; int s=0;
-    if(victim.type!=PieceType::NONE) s += 10*PIECE_VALUES[static_cast<int>(victim.type)]-PIECE_VALUES[static_cast<int>(attacker.type)];
-    if(m.promotion!=PieceType::NONE) s+=PIECE_VALUES[static_cast<int>(m.promotion)]+500;
-    if(attacker.type==PieceType::KING && std::abs(m.toCol-m.fromCol)==2) s+=50;
+    if(isCaptureMove(p,m)){
+        int victimValue = victim.type==PieceType::NONE ? PIECE_VALUES[static_cast<int>(PieceType::PAWN)] : PIECE_VALUES[static_cast<int>(victim.type)];
+        s += 20000 + 10*victimValue-PIECE_VALUES[static_cast<int>(attacker.type)];
+    }
+    if(m.promotion!=PieceType::NONE) s+=PIECE_VALUES[static_cast<int>(m.promotion)]+10000;
+    if(attacker.type==PieceType::KING && std::abs(m.toCol-m.fromCol)==2) s+=100;
+    if(isKiller(m,ply,0)) s+=8000;
+    else if(isKiller(m,ply,1)) s+=7000;
+    if(attacker.color!=Color::NONE){int side=attacker.color==Color::WHITE?0:1;s+=historyHeuristic[side][m.fromRow*8+m.fromCol][m.toRow*8+m.toCol];}
     return s;
 }
 
-void orderMoves(const Position&p,std::vector<Move>&moves,const Move*ttMove=nullptr){
+void orderMoves(const Position&p,std::vector<Move>&moves,const Move*ttMove=nullptr,int ply=0){
     std::stable_sort(moves.begin(),moves.end(),[&](const Move&a,const Move&b){
-        int sa=(ttMove&&sameMove(a,*ttMove)?100000000:0)+moveScore(p,a);
-        int sb=(ttMove&&sameMove(b,*ttMove)?100000000:0)+moveScore(p,b);
+        int sa=(ttMove&&sameMove(a,*ttMove)?100000000:0)+moveScore(p,a,ply);
+        int sb=(ttMove&&sameMove(b,*ttMove)?100000000:0)+moveScore(p,b,ply);
         return sa>sb;
     });
+}
+
+int pstValue(PieceType type, int r, int c, Color color){
+    int rr = color==Color::WHITE ? r : 7-r;
+    switch(type){
+        case PieceType::PAWN:return PAWN_PST[rr][c];
+        case PieceType::KNIGHT:return KNIGHT_PST[rr][c];
+        case PieceType::BISHOP:return BISHOP_PST[rr][c];
+        case PieceType::ROOK:return ROOK_PST[rr][c];
+        case PieceType::QUEEN:return QUEEN_PST[rr][c];
+        case PieceType::KING:return KING_MID_PST[rr][c];
+        default:return 0;
+    }
 }
 
 int evaluateImpl(const Position&p){
     int score=0;
     int whiteBishops=0, blackBishops=0;
+    int whitePawnFiles[8]{}, blackPawnFiles[8]{};
+    int whitePawnCount=0, blackPawnCount=0;
+
     for(int r=0;r<8;r++)for(int c=0;c<8;c++){
         Piece pc=p.board[r][c]; if(pc.type==PieceType::NONE) continue;
         int v=PIECE_VALUES[static_cast<int>(pc.type)];
-        int positional=0;
-        if(pc.type==PieceType::PAWN){ positional=(pc.color==Color::WHITE?(6-r):(r-1))*4; }
-        else if(pc.type==PieceType::KNIGHT||pc.type==PieceType::BISHOP){ int center=3-std::max(std::abs(3-r),std::abs(3-c)); positional=center*10; }
-        else if(pc.type==PieceType::KING){ positional=(pc.color==Color::WHITE?(7-r):r)*2; }
+        int positional=pstValue(pc.type,r,c,pc.color);
+        if(pc.type==PieceType::PAWN){
+            if(pc.color==Color::WHITE){whitePawnFiles[c]++;whitePawnCount++;}
+            else {blackPawnFiles[c]++;blackPawnCount++;}
+        }
         if(pc.type==PieceType::BISHOP){ if(pc.color==Color::WHITE)whiteBishops++;else blackBishops++; }
         score += (pc.color==Color::WHITE?1:-1)*(v+positional);
     }
+
+    // Pawn structure: doubled and isolated pawns are small weaknesses.
+    for(int f=0;f<8;f++){
+        if(whitePawnFiles[f]>1) score -= 12*(whitePawnFiles[f]-1);
+        if(blackPawnFiles[f]>1) score += 12*(blackPawnFiles[f]-1);
+        if(whitePawnFiles[f]>0 && (f==0 || whitePawnFiles[f-1]==0) && (f==7 || whitePawnFiles[f+1]==0)) score -= 10;
+        if(blackPawnFiles[f]>0 && (f==0 || blackPawnFiles[f-1]==0) && (f==7 || blackPawnFiles[f+1]==0)) score += 10;
+    }
+
+    // Passed pawns: no enemy pawn exists on the same or adjacent file ahead.
+    for(int r=0;r<8;r++)for(int c=0;c<8;c++){
+        Piece pc=p.board[r][c]; if(pc.type!=PieceType::PAWN) continue;
+        bool passed=true;
+        if(pc.color==Color::WHITE){
+            for(int rr=r-1;rr>=0 && passed;rr--) for(int ff=std::max(0,c-1);ff<=std::min(7,c+1);ff++) if(p.board[rr][ff].type==PieceType::PAWN&&p.board[rr][ff].color==Color::BLACK) passed=false;
+            if(passed) score += 20 + (6-r)*8;
+        } else {
+            for(int rr=r+1;rr<8 && passed;rr++) for(int ff=std::max(0,c-1);ff<=std::min(7,c+1);ff++) if(p.board[rr][ff].type==PieceType::PAWN&&p.board[rr][ff].color==Color::WHITE) passed=false;
+            if(passed) score -= 20 + (r-1)*8;
+        }
+    }
+
     if(whiteBishops>=2) score+=30;
     if(blackBishops>=2) score-=30;
+
+    // Rooks like open and semi-open files.
+    for(int c=0;c<8;c++){
+        bool whitePawn=whitePawnFiles[c]>0, blackPawn=blackPawnFiles[c]>0;
+        if(!whitePawn && !blackPawn){
+            for(int r=0;r<8;r++) if(p.board[r][c].type==PieceType::ROOK&&p.board[r][c].color==Color::WHITE) score+=18;
+            for(int r=0;r<8;r++) if(p.board[r][c].type==PieceType::ROOK&&p.board[r][c].color==Color::BLACK) score-=18;
+        } else {
+            if(!whitePawn) for(int r=0;r<8;r++) if(p.board[r][c].type==PieceType::ROOK&&p.board[r][c].color==Color::WHITE) score+=8;
+            if(!blackPawn) for(int r=0;r<8;r++) if(p.board[r][c].type==PieceType::ROOK&&p.board[r][c].color==Color::BLACK) score-=8;
+        }
+    }
+
+    // Small castling/king-safety bonuses.
+    if(!p.whiteKingSideCastle && !p.whiteQueenSideCastle){
+        if(p.board[7][6].type==PieceType::KING || p.board[7][2].type==PieceType::KING) score+=25;
+    }
+    if(!p.blackKingSideCastle && !p.blackQueenSideCastle){
+        if(p.board[0][6].type==PieceType::KING || p.board[0][2].type==PieceType::KING) score-=25;
+    }
+
+    // Slight bonus for having more pawns around the center.
+    for(int c=3;c<=4;c++){
+        if(p.board[4][c].type==PieceType::PAWN&&p.board[4][c].color==Color::WHITE) score+=8;
+        if(p.board[3][c].type==PieceType::PAWN&&p.board[3][c].color==Color::WHITE) score+=8;
+        if(p.board[3][c].type==PieceType::PAWN&&p.board[3][c].color==Color::BLACK) score-=8;
+        if(p.board[4][c].type==PieceType::PAWN&&p.board[4][c].color==Color::BLACK) score-=8;
+    }
+
+    (void)whitePawnCount; (void)blackPawnCount;
     return score;
 }
 
 int quiescence(Position&p,int alpha,int beta){
     if(Clock::now()>=deadline){stopSearch=true;return 0;}
     nodes++;
-    int stand=evaluateImpl(p); if(stand>=beta)return beta; if(stand>alpha)alpha=stand;
-    auto moves=generateLegalMoves(p); orderMoves(p,moves);
-    for(const auto&m:moves){ if(p.board[m.toRow][m.toCol].type==PieceType::NONE&&m.promotion==PieceType::NONE)continue;
+    int stand=(p.sideToMove==Color::WHITE?evaluateImpl(p):-evaluateImpl(p));
+    if(stand>=beta)return beta; if(stand>alpha)alpha=stand;
+    auto moves=generateLegalMoves(p); orderMoves(p,moves,nullptr,0);
+    for(const auto&m:moves){ if(!isCaptureMove(p,m)&&m.promotion==PieceType::NONE)continue;
         StateInfo st{};makeMove(p,m,st);int score=-quiescence(p,-beta,-alpha);undoMove(p,m,st);if(stopSearch)return 0;if(score>=beta)return beta;if(score>alpha)alpha=score;
     }
     return alpha;
 }
 
-int negamax(Position&p,int depth,int alpha,int beta){
+int negamax(Position&p,int depth,int alpha,int beta,int ply){
     if(Clock::now()>=deadline){stopSearch=true;return 0;}
     nodes++;
     bool inCheck=isInCheck(p,p.sideToMove);
     if(depth<=0)return quiescence(p,alpha,beta);
     auto moves=generateLegalMoves(p);
-    if(moves.empty()) return inCheck ? -MATE : 0;
+    if(moves.empty()) return inCheck ? -MATE+ply : 0;
     std::uint64_t key=hashPosition(p);
     auto it=tt.find(key); Move ttMove{}; bool hasTT=false;
     if(it!=tt.end()){ttMove=it->second.best;hasTT=true;if(it->second.depth>=depth){int s=it->second.score;if(it->second.flag==TT_EXACT)return s;if(it->second.flag==TT_LOWER)alpha=std::max(alpha,s);else if(it->second.flag==TT_UPPER)beta=std::min(beta,s);if(alpha>=beta)return s;}}
-    orderMoves(p,moves,hasTT?&ttMove:nullptr);
+    orderMoves(p,moves,hasTT?&ttMove:nullptr,ply);
     int originalAlpha=alpha; int best=-INF; Move bestMove=moves[0];
-    for(const auto&m:moves){StateInfo st{};makeMove(p,m,st);int score=-negamax(p,depth-1,-beta,-alpha);undoMove(p,m,st);if(stopSearch)return 0;if(score>best){best=score;bestMove=m;}if(score>alpha)alpha=score;if(alpha>=beta)break;}
+    for(const auto&m:moves){StateInfo st{};makeMove(p,m,st);int score=-negamax(p,depth-1,-beta,-alpha,ply+1);undoMove(p,m,st);if(stopSearch)return 0;if(score>best){best=score;bestMove=m;}if(score>alpha)alpha=score;if(alpha>=beta){
+            if(!isCaptureMove(p,m) && m.promotion==PieceType::NONE && ply<MAX_PLY){
+                if(!sameMove(killerMoves[ply][0],m)){killerMoves[ply][1]=killerMoves[ply][0];killerMoves[ply][0]=m;}
+                Piece pc=p.board[m.fromRow][m.fromCol]; if(pc.color!=Color::NONE){int side=pc.color==Color::WHITE?0:1;historyHeuristic[side][m.fromRow*8+m.fromCol][m.toRow*8+m.toCol]+=depth*depth;if(historyHeuristic[side][m.fromRow*8+m.fromCol][m.toRow*8+m.toCol]>200000)historyHeuristic[side][m.fromRow*8+m.fromCol][m.toRow*8+m.toCol]=200000;}
+            }
+            break;
+        }}
     TTFlag flag=best<=originalAlpha?TT_UPPER:(best>=beta?TT_LOWER:TT_EXACT);tt[key]=TTEntry{depth,best,flag,bestMove};return best;
 }
 }
+
 
 Position startPosition(){
     Position p{}; for(auto&r:p.board)for(auto&x:r)x={PieceType::NONE,Color::NONE};
@@ -215,9 +372,9 @@ std::uint64_t perft(Position&p,int depth){if(depth==0)return 1;auto moves=genera
 int evaluate(const Position&p){return p.sideToMove==Color::WHITE?evaluateImpl(p):-evaluateImpl(p);}
 
 SearchResult searchBestMove(Position&p,int maxDepth,int timeLimitMs){
-    tt.clear();nodes=0;stopSearch=false;deadline=Clock::now()+std::chrono::milliseconds(std::max(1,timeLimitMs));
+    tt.clear();nodes=0;stopSearch=false;std::fill(&killerMoves[0][0], &killerMoves[0][0] + MAX_PLY*2, Move{});std::fill(&historyHeuristic[0][0][0], &historyHeuristic[0][0][0] + 2*64*64, 0);deadline=Clock::now()+std::chrono::milliseconds(std::max(1,timeLimitMs));
     SearchResult result;auto moves=generateLegalMoves(p);if(moves.empty())return result;result.move=moves[0];
-    for(int depth=1;depth<=maxDepth;depth++){if(Clock::now()>=deadline)break;int best=-INF;Move bestMove=result.move;orderMoves(p,moves);for(const auto&m:moves){if(Clock::now()>=deadline){stopSearch=true;break;}StateInfo st{};makeMove(p,m,st);int score=-negamax(p,depth-1,-INF,INF);undoMove(p,m,st);if(stopSearch)break;if(score>best){best=score;bestMove=m;}}
+    for(int depth=1;depth<=maxDepth;depth++){if(Clock::now()>=deadline)break;int best=-INF;Move bestMove=result.move;orderMoves(p,moves,nullptr,0);for(const auto&m:moves){if(Clock::now()>=deadline){stopSearch=true;break;}StateInfo st{};makeMove(p,m,st);int score=-negamax(p,depth-1,-INF,INF,0);undoMove(p,m,st);if(stopSearch)break;if(score>best){best=score;bestMove=m;}}
         if(stopSearch) break;
         result.move=bestMove;
         result.score=best;

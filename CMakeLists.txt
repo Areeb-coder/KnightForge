@@ -7,6 +7,7 @@ add_executable(chess_engine
     src/Chess.cpp
     src/Phase1/Piece.cpp
     src/Phase2/Move.cpp
+    src/UCI.cpp
 )
 target_include_directories(chess_engine PRIVATE src)
 

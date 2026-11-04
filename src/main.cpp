@@ -1,4 +1,5 @@
 #include "Chess.h"
+#include "UCI.h"
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -6,6 +7,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
+#include <cstdint>
 
 using namespace std;
 
@@ -18,7 +21,8 @@ static void printHelp(){cout<<"Commands:\n  e2e4       make a move\n  moves     
 
 struct HistoryEntry{Move move;StateInfo state;};
 
-int main(){
+int main(int argc, char** argv){
+    if(argc > 1 && std::string(argv[1]) == "--uci") { runUCI(); return 0; }
     Position p=startPosition();vector<HistoryEntry> history;unordered_map<uint64_t,int> repetitions;repetitions[positionKey(p)]=1;int depth=4,timeMs=1000;
     cout<<"========================================\n       MY CHESS ENGINE - TERMINAL\n========================================\n";cout<<"Basic rules + search engine\nType 'help' for commands.\n";
     while(true){
@@ -34,6 +38,10 @@ int main(){
         if(low=="depth"){int n;if(ss>>n&&n>=1&&n<=10){depth=n;cout<<"Depth set to "<<depth<<".\n";}else cout<<"Use depth 1..10.\n";continue;}
         if(low=="time"){int n;if(ss>>n&&n>=50&&n<=60000){timeMs=n;cout<<"Time set to "<<timeMs<<" ms.\n";}else cout<<"Use time 50..60000 ms.\n";continue;}
         if(low=="perft"){int d;if(ss>>d&&d>=1&&d<=6){Position t=p;cout<<"Perft("<<d<<") = "<<perft(t,d)<<"\n";}else cout<<"Use perft 1..6.\n";continue;}
+        if(low=="divide"){int d;if(ss>>d&&d>=1&&d<=5){Position t=p;auto root=generateLegalMoves(t);std::uint64_t total=0;for(const auto&m:root){StateInfo st{};makeMove(t,m,st);auto n=perft(t,d-1);undoMove(t,m,st);cout<<moveToString(m)<<": "<<n<<"\n";total+=n;}cout<<"Total: "<<total<<"\n";}else cout<<"Use divide 1..5.\n";continue;}
+        if(low=="eval"){cout<<"Evaluation: "<<evaluate(p)<<" centipawns from side-to-move perspective.\n";continue;}
+        if(low=="bench"){auto t0=std::chrono::steady_clock::now();SearchResult r=searchBestMove(p,depth,timeMs);auto t1=std::chrono::steady_clock::now();auto ms=std::chrono::duration_cast<std::chrono::milliseconds>(t1-t0).count();double nps=ms? (double)r.nodes*1000.0/ms:0.0;cout<<"Bench: move="<<moveToString(r.move)<<" depth="<<r.depth<<" nodes="<<r.nodes<<" time="<<ms<<" ms nps="<<(std::uint64_t)nps<<"\n";continue;}
+        if(low=="uci"){runUCI();break;}
         if(low=="setfen"){string fen,part;getline(ss,part);if(part.size()&&part[0]==' ')part.erase(0,1);Position q;if(positionFromFEN(part,q)){p=q;history.clear();repetitions.clear();repetitions[positionKey(p)]=1;cout<<"Position loaded.\n";}else cout<<"Invalid FEN.\n";continue;}
         Move user; if(!parseInputMove(cmd,user)){cout<<"Invalid command or move. Example: e2e4\n";continue;}auto it=find_if(legal.begin(),legal.end(),[&](const Move&m){return sameMove(m,user);});if(it==legal.end()){cout<<"Illegal move: "<<cmd<<"\n";continue;}
         StateInfo st{};makeMove(p,*it,st);history.push_back({*it,st});repetitions[positionKey(p)]++;

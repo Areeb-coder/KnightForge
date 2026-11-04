@@ -1,5 +1,5 @@
-# Final — Classical Search Engine
+# Pre-ML — Extended Classical Engine
 
-The supplied Final snapshot, adding the engine/search implementation beyond the Phase 3 rules foundation. Consult its source and README for the precise feature set.
+The supplied Pre-ML snapshot. This is a later classical-engine iteration; it is not evidence of a trained machine-learning model.
 
-Branch: `engine/basic-search`
+Branch: `engine/advanced-search`
