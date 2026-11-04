@@ -151,10 +151,10 @@ These tests cover selected behavior, not every possible chess position. See [TES
 
 A browser chess player is included in [`web/`](web/). It compiles the repository's C++ move-generation and search implementation to WebAssembly, so the opponent is KnightForge itself—not a remote third-party engine.
 
-- You play White; KnightForge plays Black.
+- At the start of each match, choose whether you want to play White or Black. The board flips for Black, and KnightForge makes the opening move when you choose Black.
 - Legal moves, SAN notation, and engine search run locally in the browser.
 - Search depth and per-move thinking time are configurable.
-- The page includes move history, undo, new game, and FEN copying.
+- The page includes move history, undo, new game, promotion selection, and FEN copying.
 
 **Publishing:** the GitHub Actions workflow at [`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds the WebAssembly module and deploys `web/` to GitHub Pages. In the repository, open **Settings → Pages → Build and deployment → Source**, select **GitHub Actions**, and let the workflow complete. The expected URL is `https://areeb-coder.github.io/KnightForge/`.
 
