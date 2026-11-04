@@ -25,7 +25,7 @@
     <section class="intro">
       <p class="eyebrow">C++17 ENGINE · WEBASSEMBLY BUILD</p>
       <h1>Make your move.<br><span>Challenge the engine.</span></h1>
-      <p class="lede">Play White against KnightForge. The same C++ move-generation and search code in the repository powers the opponent directly in your browser.</p>
+      <p class="lede">Choose White or Black, then play against KnightForge. The same C++ move-generation and search code in this repository powers the opponent directly in your browser.</p>
       <div class="engine-tags"><span>LEGAL MOVE GENERATION</span><span>SAN</span><span>ALPHA-BETA SEARCH</span></div>
     </section>
 
@@ -33,16 +33,16 @@
       <div class="board-column">
         <div class="player-row opponent">
           <div class="avatar">♚</div>
-          <div class="player-name"><strong>KnightForge</strong><small id="engine-state">Engine loading…</small></div>
-          <span class="side-label">BLACK</span>
+          <div class="player-name"><strong id="opponent-name">KnightForge</strong><small id="engine-state">Engine loading…</small></div>
+          <span class="side-label" id="opponent-side">BLACK</span>
         </div>
         <div class="board-frame">
-          <div id="board" class="board" role="group" aria-label="Chessboard. You play White."></div>
+          <div id="board" class="board" role="group" aria-label="Chessboard"></div>
         </div>
         <div class="player-row you">
           <div class="avatar">♔</div>
-          <div class="player-name"><strong>You</strong><small>White · Your turn</small></div>
-          <span class="side-label">WHITE</span>
+          <div class="player-name"><strong id="player-name">You</strong><small id="player-turn-label">Choose your side</small></div>
+          <span class="side-label" id="player-side">WHITE</span>
         </div>
       </div>
 
@@ -92,6 +92,31 @@
       <span>Open-source project · <a href="https://github.com/Areeb-coder/KnightForge">KnightForge on GitHub</a></span>
     </footer>
   </main>
+  <div id="side-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="side-title">
+    <div class="modal-card">
+      <p class="eyebrow">NEW MATCH</p>
+      <h2 id="side-title">Choose your side</h2>
+      <p class="modal-copy">Pick the pieces you want to play. KnightForge takes the opposite color.</p>
+      <div class="side-choices">
+        <button class="side-choice" type="button" data-side="w"><span class="choice-piece white-piece">♔</span><strong>Play White</strong><small>You move first</small></button>
+        <button class="side-choice" type="button" data-side="b"><span class="choice-piece black-piece">♚</span><strong>Play Black</strong><small>KnightForge opens</small></button>
+      </div>
+      <div id="modal-engine-status" class="modal-foot">Loading your engine…</div>
+    </div>
+  </div>
+  <div id="promotion-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="promotion-title">
+    <div class="modal-card promotion-card">
+      <p class="eyebrow">SPECIAL MOVE</p>
+      <h2 id="promotion-title">Promote your pawn</h2>
+      <p class="modal-copy">Choose the piece for your promotion.</p>
+      <div class="promotion-choices">
+        <button type="button" data-promotion="q" aria-label="Promote to queen">♕</button>
+        <button type="button" data-promotion="r" aria-label="Promote to rook">♖</button>
+        <button type="button" data-promotion="b" aria-label="Promote to bishop">♗</button>
+        <button type="button" data-promotion="n" aria-label="Promote to knight">♘</button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
