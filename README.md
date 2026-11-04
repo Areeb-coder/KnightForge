@@ -147,18 +147,18 @@ The perft test checks the standard initial-position node counts:
 
 These tests cover selected behavior, not every possible chess position. See [TESTING.md](docs/TESTING.md) and [SAN_ENGINE_README.md](docs/SAN_ENGINE_README.md) for additional details.
 
-## Web-play roadmap
+## Play in your browser
 
-A browser-based player is a planned integration, not a feature currently included in this repository.
+A browser chess player is included in [`web/`](web/). It compiles the repository's C++ move-generation and search implementation to WebAssembly, so the opponent is KnightForge itself—not a remote third-party engine.
 
-The intended design is:
+- You play White; KnightForge plays Black.
+- Legal moves, SAN notation, and engine search run locally in the browser.
+- Search depth and per-move thinking time are configurable.
+- The page includes move history, undo, new game, and FEN copying.
 
-1. A browser chessboard handles interaction and visual state.
-2. A small backend owns a KnightForge process and communicates with it through UCI.
-3. The backend sends the current position and move list, then returns the engine's `bestmove`.
-4. The browser applies that move and displays the updated game.
+**Publishing:** the GitHub Actions workflow at [`.github/workflows/pages.yml`](.github/workflows/pages.yml) builds the WebAssembly module and deploys `web/` to GitHub Pages. In the repository, open **Settings → Pages → Build and deployment → Source**, select **GitHub Actions**, and let the workflow complete. The expected URL is `https://areeb-coder.github.io/KnightForge/`.
 
-GitHub Pages can host the static front end, but it cannot execute a C++ engine process. The UCI backend must be hosted separately (or the engine must be compiled to WebAssembly with an appropriate browser-compatible interface).
+See [`docs/WEB_PLAYER.md`](docs/WEB_PLAYER.md) for the architecture, setup, and current limitations.
 
 ## Contributing
 
