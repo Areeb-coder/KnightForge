@@ -59,5 +59,7 @@ int evaluate(const Position& p);
 SearchResult searchBestMove(Position& p, int maxDepth, int timeLimitMs);
 
 std::string moveToString(const Move& m);
+std::string moveToSAN(Position& p, const Move& m);
+bool parseSANMove(Position& p, const std::string& input, Move& out);
 std::string colorName(Color c);
 std::string pieceName(PieceType t);

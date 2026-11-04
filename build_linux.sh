@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
-set -e
-g++ -std=c++17 src/main.cpp src/Chess.cpp src/Phase1/Piece.cpp src/Phase2/Move.cpp src/UCI.cpp -O2 -o chess_engine
-./chess_engine
+set -euo pipefail
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+printf '\nBuild complete: ./build/chess_engine\n'

@@ -20,3 +20,12 @@ add_executable(perft_test
 target_include_directories(perft_test PRIVATE src)
 enable_testing()
 add_test(NAME perft_test COMMAND perft_test)
+
+add_executable(san_test
+    tests/san_test.cpp
+    src/Chess.cpp
+    src/Phase1/Piece.cpp
+    src/Phase2/Move.cpp
+)
+target_include_directories(san_test PRIVATE src)
+add_test(NAME san_test COMMAND san_test)

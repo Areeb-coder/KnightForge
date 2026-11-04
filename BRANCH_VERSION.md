@@ -1,5 +1,5 @@
-# Pre-ML — Extended Classical Engine
+# SAN — Notation-Enabled Engine
 
-The supplied Pre-ML snapshot. This is a later classical-engine iteration; it is not evidence of a trained machine-learning model.
+The supplied SAN snapshot, prepared with project documentation, build instructions, tests, and CI workflow. SAN is the default branch.
 
-Branch: `engine/advanced-search`
+Branch: `main`

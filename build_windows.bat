@@ -1,4 +1,9 @@
 @echo off
-g++ -std=c++17 src/main.cpp src/Chess.cpp src/Phase1/Piece.cpp src/Phase2/Move.cpp src/UCI.cpp -O2 -o chess_engine.exe
+setlocal
+cmake -S . -B build
 if errorlevel 1 exit /b 1
-chess_engine.exe
+cmake --build build --config Release
+if errorlevel 1 exit /b 1
+echo.
+echo Build complete. Look for chess_engine.exe in the build folder.
+endlocal

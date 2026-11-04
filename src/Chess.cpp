@@ -385,6 +385,127 @@ SearchResult searchBestMove(Position&p,int maxDepth,int timeLimitMs){
 }
 
 std::string moveToString(const Move&m){std::string s; s.push_back(char('a'+m.fromCol));s.push_back(char('8'-m.fromRow));s.push_back(char('a'+m.toCol));s.push_back(char('8'-m.toRow));if(m.promotion!=PieceType::NONE){char x='q';if(m.promotion==PieceType::ROOK)x='r';else if(m.promotion==PieceType::BISHOP)x='b';else if(m.promotion==PieceType::KNIGHT)x='n';s.push_back(x);}return s;}
+
+namespace {
+char sanPieceLetter(PieceType t){
+    switch(t){
+        case PieceType::KING: return 'K';
+        case PieceType::QUEEN: return 'Q';
+        case PieceType::ROOK: return 'R';
+        case PieceType::BISHOP: return 'B';
+        case PieceType::KNIGHT: return 'N';
+        default: return '\0';
+    }
+}
+
+bool isSameMoveForSAN(const Move& a, const Move& b){
+    return a.fromRow==b.fromRow && a.fromCol==b.fromCol &&
+           a.toRow==b.toRow && a.toCol==b.toCol && a.promotion==b.promotion;
+}
+
+std::string stripSANCheckSuffix(std::string s){
+    while(!s.empty() && (s.back()=='+' || s.back()=='#')) s.pop_back();
+    return s;
+}
+
+std::string normalizeSANInput(std::string s){
+    std::string out;
+    for(char ch:s){
+        if(std::isspace((unsigned char)ch)) continue;
+        if(ch=='0') ch='O';
+        out.push_back(ch);
+    }
+    while(!out.empty() && (out.back()=='+' || out.back()=='#')) out.pop_back();
+    return out;
+}
+}
+
+std::string moveToSAN(Position& p, const Move& m){
+    Piece moving = p.board[m.fromRow][m.fromCol];
+    if(moving.type==PieceType::NONE) return "";
+
+    // Castling.
+    if(moving.type==PieceType::KING && m.fromRow==m.toRow && std::abs(m.toCol-m.fromCol)==2){
+        std::string san = (m.toCol>m.fromCol) ? "O-O" : "O-O-O";
+        StateInfo st{};
+        makeMove(p,m,st);
+        bool check = isInCheck(p,p.sideToMove);
+        auto replies = generateLegalMoves(p);
+        undoMove(p,m,st);
+        if(check) san += replies.empty() ? "#" : "+";
+        return san;
+    }
+
+    bool capture = (p.board[m.toRow][m.toCol].type != PieceType::NONE);
+    if(moving.type==PieceType::PAWN && m.fromCol!=m.toCol &&
+       p.board[m.toRow][m.toCol].type==PieceType::NONE &&
+       m.toRow==p.enPassantRow && m.toCol==p.enPassantCol) capture=true;
+
+    std::string san;
+    char pieceLetter = sanPieceLetter(moving.type);
+    if(pieceLetter) san.push_back(pieceLetter);
+
+    // SAN disambiguation for non-pawns. Find other legal moves of the same type
+    // that reach the same destination.
+    if(moving.type!=PieceType::PAWN && moving.type!=PieceType::KING){
+        auto legal = generateLegalMoves(p);
+        std::vector<Move> conflicts;
+        for(const auto& candidate:legal){
+            if(isSameMoveForSAN(candidate,m)) continue;
+            if(candidate.toRow==m.toRow && candidate.toCol==m.toCol &&
+               p.board[candidate.fromRow][candidate.fromCol].type==moving.type){
+                conflicts.push_back(candidate);
+            }
+        }
+        if(!conflicts.empty()){
+            bool sameFile=false, sameRank=false;
+            for(const auto& candidate:conflicts){
+                sameFile = sameFile || candidate.fromCol==m.fromCol;
+                sameRank = sameRank || candidate.fromRow==m.fromRow;
+            }
+            if(!sameFile) san.push_back(char('a'+m.fromCol));
+            else if(!sameRank) san.push_back(char('1'+(7-m.fromRow)));
+            else {
+                san.push_back(char('a'+m.fromCol));
+                san.push_back(char('1'+(7-m.fromRow)));
+            }
+        }
+    } else if(moving.type==PieceType::PAWN && capture){
+        san.push_back(char('a'+m.fromCol));
+    }
+
+    if(capture) san.push_back('x');
+    san.push_back(char('a'+m.toCol));
+    san.push_back(char('1'+(7-m.toRow)));
+
+    if(m.promotion!=PieceType::NONE){
+        san.push_back('=');
+        san.push_back(sanPieceLetter(m.promotion));
+    }
+
+    StateInfo st{};
+    makeMove(p,m,st);
+    bool check = isInCheck(p,p.sideToMove);
+    auto replies = generateLegalMoves(p);
+    undoMove(p,m,st);
+    if(check) san += replies.empty() ? "#" : "+";
+    return san;
+}
+
+bool parseSANMove(Position& p, const std::string& input, Move& out){
+    std::string wanted = normalizeSANInput(input);
+    if(wanted.empty()) return false;
+
+    auto legal = generateLegalMoves(p);
+    for(const auto& m:legal){
+        std::string san = moveToSAN(p,m);
+        if(normalizeSANInput(san)==wanted){
+            out=m;
+            return true;
+        }
+    }
+    return false;
+}
 std::string colorName(Color c){return c==Color::WHITE?"White":c==Color::BLACK?"Black":"None";}
 std::string pieceName(PieceType t){switch(t){case PieceType::PAWN:return"Pawn";case PieceType::KNIGHT:return"Knight";case PieceType::BISHOP:return"Bishop";case PieceType::ROOK:return"Rook";case PieceType::QUEEN:return"Queen";case PieceType::KING:return"King";default:return"None";}}
 
